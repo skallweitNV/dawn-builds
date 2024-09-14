@@ -108,7 +108,7 @@ jobs:
       OUTPUT_FILENAME: ${{ matrix.target_os }}_${{ matrix.arch }}.tar.gz
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup MSVC environment
         if: ${{ matrix.target_os == 'win' }}
         shell: bash
@@ -199,7 +199,7 @@ jobs:
           tar -C output -v -czf ${{ env.OUTPUT_FILENAME }} lib include
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: matrix-output
           path: ${{ env.OUTPUT_FILENAME }}
@@ -214,8 +214,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [config, build]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: matrix-output
           path: out
