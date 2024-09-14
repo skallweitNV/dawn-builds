@@ -6,8 +6,8 @@ on:
 
 # Global Settings
 env:
-  DAWN_BRANCH: chromium/4848
-  DAWN_URL: https://dawn.googlesource.com/dawn
+  DAWN_BRANCH: master
+  DAWN_URL: https://github.com/google/dawn.git
   MSVC_PATH: 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC'
 
 
