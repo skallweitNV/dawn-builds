@@ -99,7 +99,7 @@ jobs:
     steps:
       - name: Clone Dawn
         run: |
-          git clone ${{ DAWN_URL }} .
+          git clone ${{ env.DAWN_URL }} .
       
       - name: Install MSVC
         uses: ilammy/msvc-dev-cmd@v1
