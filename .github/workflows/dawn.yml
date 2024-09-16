@@ -40,35 +40,30 @@ jobs:
       matrix:
         include:
           # Android
-          - target_os: android
-            arch: arm
-            custom_gnargs: use_custom_libcxx=false
-            gclient_os: '["android", "unix"]'
-            os: ubuntu-latest
-          - target_os: android
-            arch: arm64
-            custom_gnargs: use_custom_libcxx=false
-            gclient_os: '["android", "unix"]'
-            os: ubuntu-latest
+          # - target_os: android
+          #   arch: arm
+          #   custom_gnargs: use_custom_libcxx=false
+          #   gclient_os: '["android", "unix"]'
+          #   os: ubuntu-latest
+          # - target_os: android
+          #   arch: arm64
+          #   custom_gnargs: use_custom_libcxx=false
+          #   gclient_os: '["android", "unix"]'
+          #   os: ubuntu-latest
 
           # iOS
-          - target_os: ios
-            arch: arm
-            custom_gnargs: use_custom_libcxx=false ios_enable_code_signing=false
-            gclient_os: '["ios", "mac"]'
-            os: macos-latest
-          - target_os: ios
-            arch: arm64
-            custom_gnargs: use_custom_libcxx=false ios_enable_code_signing=false
-            gclient_os: '["ios", "mac"]'
-            os: macos-latest
+          # - target_os: ios
+          #   arch: arm
+          #   custom_gnargs: use_custom_libcxx=false ios_enable_code_signing=false
+          #   gclient_os: '["ios", "mac"]'
+          #   os: macos-latest
+          # - target_os: ios
+          #   arch: arm64
+          #   custom_gnargs: use_custom_libcxx=false ios_enable_code_signing=false
+          #   gclient_os: '["ios", "mac"]'
+          #   os: macos-latest
 
           # Linux
-          - target_os: linux
-            arch: x86
-            custom_gnargs: use_custom_libcxx=false
-            gclient_os: '["linux"]'
-            os: ubuntu-latest
           - target_os: linux
             arch: x64
             custom_gnargs: use_custom_libcxx=false use_glib=false
@@ -89,12 +84,6 @@ jobs:
           
           # Windows
           - target_os: win
-            arch: x86
-            custom_gnargs: is_clang=false
-            gclient_os: '["win"]'
-            msvc_arch: amd64_x86
-            os: windows-latest
-          - target_os: win
             arch: x64
             msvc_arch: amd64_x86
             custom_gnargs: is_clang=false
@@ -108,20 +97,17 @@ jobs:
       OUTPUT_FILENAME: ${{ matrix.target_os }}_${{ matrix.arch }}.tar.gz
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup MSVC environment
-        if: ${{ matrix.target_os == 'win' }}
-        shell: bash
+      - name: Clone Dawn
         run: |
-          '${{ env.MSVC_PATH }}\Auxiliary\Build\vcvarsall.bat' ${{ matrix.msvc_arch }}
-          MSVC_TOOLS=$(find '${{ env.MSVC_PATH }}\Tools\MSVC' -maxdepth 1 -type d | sort -r | head -n 1)
-          echo ${MSVC_TOOLS}'\bin\Hostx64\x64\' >> $GITHUB_PATH
+          git clone ${{ DAWN_URL }} .
+      
+      - name: Install MSVC
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Install Linux dependencies
         if: ${{ matrix.target_os == 'linux' }}
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get install pkg-config clang gcc gcc-multilib g++ g++-multilib
+          sudo apt-get install libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config nodejs npm
 
       - name: Install depot tools
         shell: bash
@@ -129,19 +115,22 @@ jobs:
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git $DEPOT_TOOLS
           echo $DEPOT_TOOLS >> $GITHUB_PATH
 
-      - name: Setup gclient build config
-        shell: bash
+      - name: Bootstrap the gclient configuration
         run: |
-          # Create config
-          mkdir out
-          cp gclient out/.gclient
-          echo 'target_os = ${{ matrix.gclient_os }}' >> out/.gclient
+          cp scripts/standalone.gclient .gclient
+
+      # - name: Setup gclient build config
+      #   shell: bash
+      #   run: |
+      #     # Create config
+      #     mkdir out
+      #     cp gclient out/.gclient
+      #     echo 'target_os = ${{ matrix.gclient_os }}' >> out/.gclient
 
       - name: Sync Dawn
-        shell: bash
-        working-directory: out
         run: |
-          gclient sync --verbose --revision ${{ needs.config.outputs.revision }}
+          gclient sync
+#          gclient sync --verbose --revision ${{ needs.config.outputs.revision }}
 
       - name: Create output directory
         shell: bash
@@ -152,10 +141,11 @@ jobs:
 
       - name: Build - Debug
         shell: bash
-        working-directory: out/src
         run: |
           gn gen out --args="${{ env.GNARGS }}"
-          ninja -v -C out dawn_native_shared dawn_platform_shared dawn_proc_shared dawn_wire_shared dawncpp
+          ninja -v -C out 
+
+      # dawn_native_shared dawn_platform_shared dawn_proc_shared dawn_wire_shared dawncpp
 
       - name: Pack - Headers
         shell: bash
@@ -173,7 +163,6 @@ jobs:
 
       - name: Build - Release
         shell: bash
-        working-directory: out/src
         run: |
           echo "Clean up debug build to free up space"
           rm -rf out
